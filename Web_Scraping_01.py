@@ -1,41 +1,41 @@
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from bs4 import BeautifulSoup
-import time
-import pandas as pd
+from bs4 import BeautifulSoup as bs
 import requests
-import csv
+import pandas as pd
 
-START_URL = "https://en.wikipedia.org/wiki/List_of_brown_dwarfs"
-browser = webdriver.Chrome(
-    "msedgedriver.exe")
-browser.get(START_URL)
-time.sleep(10)
+url = 'https://en.wikipedia.org/wiki/List_of_brown_dwarfs'
 
-page = requests.get(START_URL)
+page = requests.get(url)
 
-def scrape():
-    headers = ["star", "distance", "mass", "radius"]
-    stars_data = []
-    for i in range(0, 428):
-        soup = BeautifulSoup(browser.page_source, "html.parser")
-        for ul_tag in soup.find_all("ul", attrs={"class", "List_of_brown_dwarfs"}):
-            li_tags = ul_tag.find_all("li")
-            temp_list = []
-            for index, li_tag in enumerate(li_tags):
-                if index == 0:
-                    temp_list.append(li_tag.find_all("a")[0].contents[0])
-                else:
-                    try:
-                        temp_list.append(li_tag.contents[0])
-                    except:
-                        temp_list.append("")
-            stars_data.append(temp_list)
+soup = bs(page.text,'html.parser')
 
-    with open("Data.csv", "w") as f:
-        csvwriter = csv.writer(f)
-        csvwriter.writerow(headers)
-        csvwriter.writerows(stars_data)
+star_table = soup.find_all('table')
 
 
-scrape()
+temp_list= []
+table_rows = star_table[7].find_all('tr')
+
+for tr in table_rows:
+    td = tr.find_all('td')
+    row = [i.text.rstrip() for i in td]
+    temp_list.append(row)
+    print(len(temp_list)) 
+
+
+names = []
+distance =[]
+mass = []
+radius =[]
+
+print(len(temp_list))
+
+for i in range(1,len(temp_list)):
+    
+    names.append(temp_list[i][0])
+    distance.append(temp_list[i][5])
+    mass.append(temp_list[i][7])
+    radius.append(temp_list[i][8])
+
+df2 = pd.DataFrame(list(zip(names,distance,mass,radius,)),columns=['star_name','distance','mass','radius'])
+
+
+df2.to_csv('data.csv')
